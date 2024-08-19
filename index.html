@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Food and Nutrition</title>
+    <style>
+      h1 {
+        color: green;
+        text-align: center;
+        margin-bottom: 40px;
+        margin-top: 50px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      td,
+      th {
+        border: 1px solid #000;
+        padding: 8px;
+        text-align: left;
+      }
+      .buttons {
+        /* background-color: green; */
+        padding: 20px;
+        display: flex;
+        gap: 10px;
+        text-decoration: none;
+      }
+
+      .editBtn {
+        background-color: #ff9900;
+        padding: 10px 20px;
+        border: 1px solid #d58722;
+        /* color: white; */
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .deleteBtn {
+        background-color: #ff0000;
+        padding: 10px 20px;
+        border: 1px solid #d52222;
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .saveBtn {
+        background-color: green;
+        padding: 10px 20px;
+        border: 1px solid green;
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Food and Nutrition Database</h1>
+    <table id="food_table">
+      <tr>
+        <th>Name</th>
+        <th>Category</th>
+        <th>Description</th>
+        <th>Serving Size</th>
+        <th>Country Of Origin</th>
+        <th>Health Benefits</th>
+        <th>Best Practices</th>
+        <th>Actions</th>
+      </tr>
+    </table>
+
+    <script>
+      fetch("http://localhost:3800/foodItems")
+        .then((res) => res.json())
+        .then((data) => {
+          const food_table = document.getElementById("food_table");
+
+          data.forEach((item) => {
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+            <td contenteditable="false">${item.name}</td>
+            <td contenteditable="false">${item.category}</td>
+            <td contenteditable="false">${item.description}</td>
+            <td contenteditable="false">${item.servingSize}</td>
+            <td contenteditable="false">${item.countryOfOrigin}</td>
+            <td contenteditable="false">${item.healthBenefits}</td>
+            <td contenteditable="false">${item.bestPractices}</td>
+            <td class="buttons">
+              <button class="editBtn">Edit</button>
+              <button class="saveBtn" style="display:none;">Save</button>
+              <button class="deleteBtn">Delete</button>
+            </td>
+          `;
+
+            const editBtn = row.querySelector(".editBtn");
+            const saveBtn = row.querySelector(".saveBtn");
+            const deleteBtn = row.querySelector(".deleteBtn");
+
+            editBtn.addEventListener("click", () => {
+              row
+                .querySelectorAll("td[contenteditable]")
+                .forEach((td) => td.setAttribute("contenteditable", "true"));
+              editBtn.style.display = "none";
+              saveBtn.style.display = "inline";
+            });
+
+            saveBtn.addEventListener("click", () => {
+              const updatedData = {
+                name: row.cells[0].innerText,
+                category: row.cells[1].innerText,
+                description: row.cells[2].innerText,
+                servingSize: row.cells[3].innerText,
+                countryOfOrigin: row.cells[4].innerText,
+                healthBenefits: row.cells[5].innerText,
+                bestPractices: row.cells[6].innerText,
+              };
+
+              fetch(`http://localhost:3800/foodItems/${item.id}`, {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(updatedData),
+              })
+                .then((response) => response.json())
+                .then((updatedItem) => {
+                  console.log("Item updated:", updatedItem);
+                  row
+                    .querySelectorAll("td[contenteditable]")
+                    .forEach((td) =>
+                      td.setAttribute("contenteditable", "false")
+                    );
+                  editBtn.style.display = "inline";
+                  saveBtn.style.display = "none";
+                })
+                .catch((err) => console.error("Error updating item:", err));
+            });
+
+            deleteBtn.addEventListener("click", () => {
+              fetch(`http://localhost:3800/foodItems/${item.id}`, {
+                method: "DELETE",
+              })
+                .then(() => {
+                  console.log("Item deleted:", item.id);
+                  food_table.removeChild(row);
+                })
+                .catch((err) => console.error("Error deleting item:", err));
+            });
+
+            food_table.appendChild(row);
+          });
+        })
+        .catch((err) => console.error("Error fetching data:", err));
+    </script>
+  </body>
+</html>
